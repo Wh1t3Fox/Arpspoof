@@ -7,7 +7,7 @@ A simple arpspoofing program written in python
 <br>
 #Usage
 ```sh
-python arpspoof.py -t <target_ip>
+python arpspoof.py -t <target_ip> -p <proxy_server> -p <ports>
 ```
 <br>
 * If no target is specified a list of live IP's will be displayed.
@@ -18,12 +18,6 @@ python arpspoof.py -t <target_ip>
 * python 2.7
 * scapy
 * signal
-
-
-#####Coming soon
-* Arpspoof the entire network
-* More options for port manipulation
-
 
 
 ####NOTE:
