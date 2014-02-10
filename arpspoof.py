@@ -33,12 +33,14 @@ def disable_ip_forwarding():
 
 
 def set_iptables(ip, proxy_server=None, ports=None):
+    if not ports:
+        ports = '80'
     os.system("/sbin/iptables -F")
     os.system("/sbin/iptables -t nat -F")
     os.system("/sbin/iptables -X")
     os.system("/sbin/iptables -A FORWARD --in-interface %s -j ACCEPT" % interface)
     os.system("/sbin/iptables -t nat --append POSTROUTING --out-interface %s -j MASQUERADE" % interface)
-    if proxy_server:
+    if proxy_server and ports:
         os.system("/sbin/iptables -t nat -A PREROUTING -p tcp -m multiport --dports %s --jump DNAT --to-destination %s" % (ports, proxy_server))
 
 
